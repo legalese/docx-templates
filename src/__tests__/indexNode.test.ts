@@ -1021,6 +1021,77 @@ Morbi dignissim consequat ex, non finibus est faucibus sodales. Integer sed just
           )
         ).toMatchSnapshot();
       });
+
+      it('110 postprocessor should delete a watermark', async () => {
+        const data = {};
+        expect(
+          await createReport(
+            {
+              noSandbox,
+              template: await fs.promises.readFile(
+                path.join(__dirname, 'fixtures', 'watermark-present.docx')
+              ),
+              data,
+              cmdDelimiter: ['{', '}'],
+
+              postProcessor: (rootNodeOrig, filename) => {
+                console.log(`*** postProcessor running on ${filename}`);
+
+                if (
+                  ![
+                    'word/header1.xml',
+                    'word/header2.xml',
+                    'word/header3.xml',
+                  ].includes(filename)
+                ) {
+                  return rootNodeOrig;
+                }
+                // let's do a deepcopy that strips a w:r element that contains //> v:textpath string=DRAFT
+
+                let hasChildrenNamed = function (
+                  mythis: Node,
+                  wantedname: string
+                ) {
+                  if (
+                    mythis._children &&
+                    mythis._children.length &&
+                    mythis._children.filter(
+                      x => !x._fTextNode && x._tag === wantedname
+                    )
+                  ) {
+                    return mythis._children.filter(
+                      x => !x._fTextNode && x._tag === wantedname
+                    );
+                  } else {
+                    return [];
+                  }
+                };
+
+                // we want to match a w:r /> w:pict /> v:shape /> v:textpath hasAttrValue "string" "DRAFT"
+                let rootNodeOut = deepCopyNode(
+                  rootNodeOrig,
+                  (n: Node) =>
+                    !n._fTextNode &&
+                    n._tag === 'w:r' &&
+                    hasChildrenNamed(n, 'w:pict').filter(x => {
+                      return hasChildrenNamed(x, 'v:shape').filter(y => {
+                        return hasChildrenNamed(y, 'v:textpath').filter(z => {
+                          if (z._attrs && z._attrs.string === 'DRAFT') {
+                            // console.log(`found an undesirable!`)
+                            return true;
+                          } else return false;
+                        });
+                      });
+                    })
+                );
+
+                return rootNodeOut;
+              },
+            },
+            'JS'
+          )
+        ).toMatchSnapshot();
+      });
     });
   });
 });
