@@ -181,7 +181,7 @@ async function createReport(
   //     ignoreKeys: ['_parent', '_fTextNode', '_attrs'],
   //   });
 
-  DEBUG && log.debug(`postProcessing document.xml`);
+  DEBUG && console.log(`postProcessing document.xml`);
   const report1b = createOptions.postProcessor(
     report1,
     `${templatePath}/document.xml`
