@@ -24,7 +24,7 @@
   },
   "scripts": {
     "compile": "rimraf ./lib && tsc",
-    "prepack": "npm run compile",
+    "prepack": "npm install && npm run compile",
     "travis": "yarn compile && yarn test",
     "jest": "jest --watch --coverage",
     "test": "yarn lint && yarn testCovFull",
